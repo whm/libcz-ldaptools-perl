@@ -1,0 +1,22 @@
+Source: libcz-ldaptools-perl
+Section: admin
+Priority: optional
+Maintainer: Bill MacAllister <bill@ca-zephyr.org>
+Build-Depends: debhelper (>= 12),
+ libappconfig-perl,
+ libauthen-krb5-perl,
+ perl,
+ perltidy
+Standards-Version: 4.0.6.1
+
+Package: libcz-ldaptools-perl
+Architecture: all
+Depends: ${misc:Depends}, ${perl:Depends},
+ libappconfig-perl,
+ libauthen-krb5-perl,
+ perl
+Recommends: perl-doc
+Description: Utility Perl module for LDAP scripts
+ This package contains perl modules to aid in the maintenance of
+ LDAP servers.
+

@@ -1,0 +1,5 @@
+libcz-ldaptools-perl (1) unstable; urgency=low
+
+  * Initial packaging of utility LDAP perl module.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Mon, 23 Oct 2023 01:00:46 +0000
