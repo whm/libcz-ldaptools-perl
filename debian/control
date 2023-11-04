@@ -5,6 +5,8 @@ Maintainer: Bill MacAllister <bill@ca-zephyr.org>
 Build-Depends: debhelper (>= 12),
  libappconfig-perl,
  libauthen-krb5-perl,
+ libipc-run-perl,
+ libnet-ldapapi-perl,
  perl,
  perltidy
 Standards-Version: 4.0.6.1
@@ -14,6 +16,8 @@ Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends},
  libappconfig-perl,
  libauthen-krb5-perl,
+ libipc-run-perl,
+ libnet-ldapapi-perl,
  perl
 Recommends: perl-doc
 Description: Utility Perl module for LDAP scripts

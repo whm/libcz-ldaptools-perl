@@ -1,3 +1,9 @@
+libcz-ldaptools-perl (2) unstable; urgency=medium
+
+  * Add package dependency for libipc-run-perl.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Sat, 04 Nov 2023 18:33:24 +0000
+
 libcz-ldaptools-perl (1) unstable; urgency=low
 
   * Initial packaging of utility LDAP perl module.
