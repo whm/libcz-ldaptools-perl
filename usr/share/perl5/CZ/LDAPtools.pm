@@ -1,15 +1,13 @@
 # -------------------------------------------------------------------
 # File: LDAPtools.pm
-# Description: This module is used by the an assortment of LDAP server tools
+# Description: A utility module for LDAP databases
 # Author: Bill MacAllister <bill@ca-zephyr.org>
 # Copyright (c) 2016-2023 Dropbox, Inc.
 # Copyright: 2023 CZ Software
 
 package CZ::LDAPtools;
 
-use AppConfig qw(:argcount :expand);
 use Authen::Krb5;
-use IPC::Run;
 use Net::LDAPapi;
 use strict;
 
@@ -20,21 +18,14 @@ BEGIN {
     our @ISA    = qw(Exporter);
     our @EXPORT = qw(
       lt_dbg
-      lt_example_conf
       lt_format_acls
       lt_ldap_connect
       lt_ldap_disconnect
       lt_msg
       lt_pool_host
-      lt_read_conf
-      lt_run_cmd
-      format_acls
-      ldap_connect
-      ldap_disconnect
-      read_ldaptools_conf
     );
 
-    our $VERSION = '4';
+    our $VERSION = '5';
 
 }
 
@@ -104,38 +95,6 @@ sub _create_ticket_cache {
 }
 
 ##############################################################################
-# Backwards compatibility routines
-##############################################################################
-
-# ------------------------------------------------------------------------
-# Read configuration properties
-
-sub read_ldaptools_conf {
-    return lt_read_conf(@_);
-}
-
-# --------------------------------------------------------------------
-# Return the ACL in a human readable format
-
-sub format_acls {
-    return lt_format_acls(@_);
-}
-
-# ------------------------------------------------------------------------
-# Bind to the directory for reading
-
-sub ldap_connect {
-    return lt_ldap_connect(@_);
-}
-
-# ------------------------------------------------------------------------
-# Close the read connection to the ldap server
-
-sub ldap_disconnect {
-    return lt_ldap_disconnect(@_);
-}
-
-##############################################################################
 # Public Routines
 ##############################################################################
 
@@ -154,34 +113,6 @@ sub lt_dbg {
 sub lt_msg {
     my ($msg) = @_;
     print("$msg\n") or die "Error writing to STDOUT\n";
-    return;
-}
-
-#------------------------------------------------------------------------
-# Print example configuratino file
-
-sub lt_example_conf {
-
-    lt_msg('# /etc/ldaptools.conf');
-    lt_msg('default_domain   = ca-zephyr.org');
-    lt_msg('dump_config      = /var/tmp/cn-config.ldif');
-    lt_msg('dump_db          = /var/tmp/db.ldif.gz');
-    lt_msg('krb_principal    = service/ldap');
-    lt_msg('krb_realm        = CA-ZEPHYR.ORG');
-    lt_msg('krb_tgt          = /run/ldap-acl-access.tgt');
-    lt_msg('ldap_base        = dc=ca-zephyr,dc=org');
-    lt_msg('ldap_environment = prod');
-    lt_msg('ldap_group_base  = cn=groups,dc=ca-zephyr,dc=org');
-    lt_msg('ldap_net_base    = cn=net,dc=ca-zephyr,dc=org');
-    lt_msg('ldap_host        = localhost');
-    lt_msg('#ldap_host       = host1,host2');
-    lt_msg('ldap_master_host = ldap-master.ca-zephyr.org');
-    lt_msg('# host_prefix = host/');
-    lt_msg('# host_prefix = ldap/');
-    lt_msg('#');
-    lt_msg('# Authentication prefix for remote command execution');
-    lt_msg('# krb_prefix = k5start -f /etc/krb5.keytab -U -- ');
-
     return;
 }
 
@@ -211,7 +142,14 @@ sub lt_ldap_connect {
     my $in_ref = shift;
     my %in     = %{$in_ref};
 
-    my $this_host = lt_pool_host($in{'host'});
+    my $this_host = $in{'host'};
+    if (!$this_host) {
+        $this_host = 'localhost';
+    }
+    my $this_port = $in{'port'};
+    if ($this_port) {
+        $this_port = 389;
+    }
 
     my $ldap;
     if ($in{'debug'}) {
@@ -220,7 +158,7 @@ sub lt_ldap_connect {
         }
         lt_dbg("connecting to server " . $this_host);
     }
-    if (($ldap = Net::LDAPapi->new($this_host)) == -1) {
+    if (($ldap = Net::LDAPapi->new($this_host), $this_port) == -1) {
         die "ERROR Connection to " . $this_host . " failed.";
     }
     my $status;
@@ -263,166 +201,11 @@ sub lt_ldap_disconnect {
 sub lt_pool_host {
     my ($host) = @_;
     my @host_list = ();
-    if (!$host) {
-        my $conf = lt_read_conf();
-        $host = $conf->ldap_host();
-    }
     @host_list = split(/,/, $host);
     my $idx       = int(rand() * scalar(@host_list));
     my $pool_host = $host_list[$idx];
     $pool_host =~ s/\s+//xmsg;
     return $pool_host;
-}
-
-# ------------------------------------------------------------------------
-# Read configuration properties
-
-sub lt_read_conf {
-    my ($filename) = @_;
-
-    if (!$filename) {
-        $filename = '/etc/ldaptools.conf';
-    }
-
-    my $conf = AppConfig->new({});
-    $conf->define(
-        'default_domain',
-        {
-            DEFAULT  => 'ca-zephyr.org',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'dump_db',
-        {
-            DEFAULT  => '/var/tmp/dbx.ldif.gz',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'dump_config',
-        {
-            DEFAULT  => '/var/tmp/cn-config.ldif',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define('host_prefix', { ARGCOUNT => ARGCOUNT_LIST });
-    $conf->define(
-        'krb_keytab',
-        {
-            DEFAULT  => '/etc/ldap/ldap.keytab',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'krb_principal',
-        {
-            DEFAULT  => 'service/ldap',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'krb_tgt',
-        {
-            DEFAULT  => '/run/ldap-acl-access.tgt',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'krb_realm',
-        {
-            DEFAULT  => 'CA-ZEPHYR.ORG',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'ldap_base',
-        {
-            DEFAULT  => 'dc=ca-zephyr,dc=org',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'ldap_environment',
-        {
-            DEFAULT  => 'prod',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'ldap_group_base',
-        {
-            DEFAULT  => 'cn=groups,dc=ca-zephyr,dc=org',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'ldap_net_base',
-        {
-            DEFAULT  => 'cn=net,dc=ca-zephyr,dc=org',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'ldap_host',
-        {
-            DEFAULT  => 'localhost',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'ldap_master_host',
-        {
-            DEFAULT  => 'ldap-master.ca-zephyr.org',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'ldap_service_base',
-        {
-            DEFAULT  => 'cn=services,dc=ca-zephyr,dc=org',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define(
-        'remctl_group_command',
-        {
-            DEFAULT  => 'group',
-            ARGCOUNT => ARGCOUNT_ONE
-        }
-    );
-    $conf->define('krb_prefix', { ARGCOUNT => ARGCOUNT_ONE });
-
-    if (-e $filename) {
-        $conf->file($filename) or die "ERROR: problem reading $filename";
-    }
-
-    return $conf;
-}
-
-# Run a shell command carefully
-
-sub _set_path {
-    print('PATH=/bin:/sbin:/usr/bin:/usr/sbin ');
-}
-
-sub lt_run_cmd {
-    my @cmd = @_;
-
-    lt_msg('running command:' . join(q{ }, @cmd));
-
-    my $in;
-    my $out;
-    my $err;
-    eval { IPC::Run::run(\@cmd, \$in, \$out, \$err, init => \&_set_path); };
-    if ($@ || $err) {
-        lt_msg('ERROR: Problem executing:' . join(q{ }, @cmd));
-        lt_msg($@);
-        lt_msg('Returned error: ' . $err);
-        die "Execution abandoned\n";
-    }
-    lt_msg($out);
-    return;
 }
 
 END { }
@@ -437,8 +220,6 @@ CZ::LDAPtools - Utility routines for the LDAP Servers
 
     use CZ::LDAPtools;
 
-    $CONF = lt_read_conf('/etc/ldaptools.conf');
-
     $DIR = lt_ldap_connect (host      => 'host1,host2,host3',
                             principal => 'service/name',
                             keytab    => '/etc/ldap/ldap-admin.keytab',
@@ -450,8 +231,6 @@ CZ::LDAPtools - Utility routines for the LDAP Servers
     lt_dbg('some message');
 
     lt_msg('some text');
-
-    lt_example_conf();
 
     my $acl = lt_format_acls($<acl string>);
 
@@ -469,10 +248,6 @@ LDAP servers.
 =item lt_dbg
 
 Displays the message passed as parameter with the prefix 'DEBUG:'.
-
-=item lt_example_conf
-
-Display an example configuration file.
 
 =item lt_format_acls
 
@@ -516,24 +291,7 @@ is required.
 
 Prints a line of text to STDOUT.
 
-=item lt_read_conf
-
-Reads the ldaptools configuration file. The default file,
-/etc/ldaptools.conf, can be overridden by passed the conf file to the
-routine as the only parameter.
-
 =back
-
-=head1 BACKWARDS COMPATIBILITY
-
-With version 3 of LDAPtools the routines were renamed to prevent name
-collisions. The old routine names are preserved, but are depricated.
-The mapping of old names to new names is:
-
-    read_ldap_tools_conf -> lt_read_conf
-    format_acls          -> lt_format_acls
-    ldap_connect         -> lt_ldap_connect
-    ldap_disconnect      -> lt_ldap_disconnect
 
 =head1 AUTHOR
 
