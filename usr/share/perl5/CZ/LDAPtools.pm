@@ -147,7 +147,7 @@ sub lt_ldap_connect {
         $this_host = 'localhost';
     }
     my $this_port = $in{'port'};
-    if ($this_port) {
+    if (!$this_port) {
         $this_port = 389;
     }
 
@@ -156,29 +156,32 @@ sub lt_ldap_connect {
         for my $a (sort keys %in) {
             lt_dbg("in{$a} = $in{$a}");
         }
-        lt_dbg("connecting to server " . $this_host);
+        lt_dbg("connecting to server $this_host:$this_port");
     }
-    if (($ldap = Net::LDAPapi->new($this_host), $this_port) == -1) {
-        die "ERROR Connection to " . $this_host . " failed.";
+    if (($ldap = Net::LDAPapi->new($this_host, $this_port)) == -1) {
+        die "ERROR Connection to $this_host:$this_port failed.";
     }
     my $status;
     if ($in{'anonymous'}) {
         if ($in{'debug'}) {
-            lt_dbg("anonymous bind to server " . $this_host);
+            lt_dbg("anonymous bind to server $this_host:$this_port");
         }
-        $status = $ldap->bind_s();
+        if ($ldap->bind_s != LDAP_SUCCESS) {
+            my $errstr = $ldap->errstring;
+            $ldap->unbind;
+            die("ERROR anonymous bind: ", $errstr);
+        }
     } else {
         # Create a ticket cache if we need to
         _create_ticket_cache($in_ref);
         if ($in{'debug'}) {
-            lt_dbg("GSSAPI bind to server " . $this_host);
+            lt_dbg("GSSAPI bind to server  $this_host:$this_port");
         }
-        $ldap->sasl_parms(-mech => "GSSAPI");
-        $status = $ldap->bind_s(-type => LDAP_AUTH_SASL);
-    }
-    if ($status != LDAP_SUCCESS) {
-        $ldap->unbind if $ldap;
-        die 'ERROR Bind error connecting to ' . $this_host;
+        if (($ldap->sasl_parms(-mech => "GSSAPI")) != LDAP_SUCCESS) {
+            my $errstr = $ldap->errstring;
+            $ldap->unbind;
+            die("ERROR GSSAPI bind: ", $errstr);
+        }
     }
     return $ldap;
 }

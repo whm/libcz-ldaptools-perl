@@ -1,3 +1,9 @@
+libcz-ldaptools-perl (4) unstable; urgency=medium
+
+  * Correct LDAP connection syntax.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Tue, 07 Nov 2023 22:55:36 +0000
+
 libcz-ldaptools-perl (3) unstable; urgency=medium
 
   * Remove backward compatibility interfaces.
