@@ -1,0 +1,22 @@
+dn: cn=config
+objectClass: olcGlobal
+cn: config
+olcArgsFile: testARGStest
+olcIndexSubstrIfMaxLen: 4
+olcIndexSubstrIfMinLen: 2
+olcIndexSubstrAnyLen: 4
+olcIndexSubstrAnyStep: 2
+olcIndexIntLen: 4
+olcLogLevel: Config
+olcLogLevel: Stats
+olcPidFile: testPIDFILEtest
+
+dn: cn=module{0},cn=config
+objectClass: olcModuleList
+cn: module{0}
+olcModulePath: /usr/lib/ldap
+olcModuleLoad: {0}back_mdb
+
+dn: cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: schema

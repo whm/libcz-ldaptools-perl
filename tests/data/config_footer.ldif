@@ -1,0 +1,31 @@
+dn: olcBackend={0}mdb,cn=config
+objectClass: olcBackendConfig
+olcBackend: {0}mdb
+structuralObjectClass: olcBackendConfig
+
+dn: olcDatabase={-1}frontend,cn=config
+objectClass: olcDatabaseConfig
+objectClass: olcFrontendConfig
+olcDatabase: {-1}frontend
+olcAccess: {0}to dn.base="" by * read
+olcAccess: {1}to dn.subtree="cn=schema,cn=config" by * read
+olcSizeLimit: 5000
+structuralObjectClass: olcDatabaseConfig
+
+dn: olcDatabase={0}config,cn=config
+objectClass: olcDatabaseConfig
+olcDatabase: {0}config
+olcAccess: {0}to * by * read by anonymous read
+structuralObjectClass: olcDatabaseConfig
+
+dn: olcDatabase=mdb,cn=config
+objectClass: olcDatabaseConfig
+objectClass: olcMdbConfig
+olcDatabase: mdb
+OlcDbMaxSize: 1073741824
+olcSuffix: dc=ca-zephyr,dc=org
+olcRootDN: cn=manager,dc=ca-zephyr,dc=org
+olcRootPW: secret
+olcDbIndex: objectClass eq
+olcAccess: to * by * write
+olcDbDirectory: testDBDIRtest

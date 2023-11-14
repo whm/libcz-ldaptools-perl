@@ -1,3 +1,18 @@
+libcz-ldaptools-perl (6) unstable; urgency=medium
+
+  * Fix to GSSAPI binds.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Tue, 28 Nov 2023 08:10:45 +0000
+
+libcz-ldaptools-perl (5) unstable; urgency=medium
+
+  * Don't call create_ticket_cache from lt_ldap_connect and expose
+    Kerberos ticket cache creation as a separate function.
+  * Simplify the ticket cache creation routine to only create
+    ticket caches.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Tue, 28 Nov 2023 07:02:22 +0000
+
 libcz-ldaptools-perl (4) unstable; urgency=medium
 
   * Correct LDAP connection syntax.

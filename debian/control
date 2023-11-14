@@ -4,15 +4,19 @@ Priority: optional
 Maintainer: Bill MacAllister <bill@ca-zephyr.org>
 Build-Depends: debhelper (>= 12),
  libauthen-krb5-perl,
+ libipc-run-perl,
  libnet-ldapapi-perl,
+ ldap-utils,
  perl,
- perltidy
+ perltidy,
+ slapd
 Standards-Version: 4.0.6.1
 
 Package: libcz-ldaptools-perl
 Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends},
  libauthen-krb5-perl,
+ libipc-run-perl,
  libnet-ldapapi-perl,
  perl
 Recommends: perl-doc

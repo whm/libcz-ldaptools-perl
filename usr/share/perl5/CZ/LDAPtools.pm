@@ -17,6 +17,7 @@ BEGIN {
 
     our @ISA    = qw(Exporter);
     our @EXPORT = qw(
+      lt_create_ticket_cache
       lt_dbg
       lt_format_acls
       lt_ldap_connect
@@ -25,7 +26,7 @@ BEGIN {
       lt_pool_host
     );
 
-    our $VERSION = '5';
+    our $VERSION = '6';
 
 }
 
@@ -38,36 +39,24 @@ my $TMP_TGT_FILE;
 # ------------------------------------------------------------------------
 # Create kerberos ticket cache
 
-sub _create_ticket_cache {
+sub lt_create_ticket_cache {
     my $in_ref = shift;
     my %in     = %{$in_ref};
 
-    if ($in{'debug'}) {
-        lt_dbg("Creating ticket cache");
-    }
-    if ($in{'tgt'}) {
-        if (-e $in{'tgt'}) {
-            my $tgtEnv = 'FILE:' . $in{'tgt'};
-            $ENV{KRB5CCNAME} = $tgtEnv;
-            if ($in{'debug'}) {
-                lt_dbg("Found tgt file, using: " . $tgtEnv);
-            }
-            return;
-        } else {
-            die 'ERROR: missing tgt file (' . $in{'tgt'} . ')';
-        }
-    } else {
-        if ($in{'keytab'} && -e $in{'keytab'}) {
-            my $princ = $in{'principal'};
-            $princ =~ s{/}{_}xmsg;
-            $TMP_TGT_FILE = '/tmp/' . $princ . $$ . '.tgt';
-            $in{'tgt'} = $TMP_TGT_FILE;
-        } else {
-            die 'ERROR: Missing keytab (' . $in{'keytab'} . ')';
-        }
-    }
     if (!$in{'realm'}) {
-        die "ERROR parameter 'realm', the Kerberos realm, missing.";
+        die 'ERROR: lt_create_ticket_cache missing parameter realm';
+    }
+    if (!$in{'principal'}) {
+        die 'missing parameter principal';
+    }
+
+    if ($in{'keytab'} && -e $in{'keytab'}) {
+        my $princ = $in{'principal'};
+        $princ =~ s{/}{_}xmsg;
+        $TMP_TGT_FILE = '/tmp/' . $princ . '.tgt';
+        $in{'tgt'} = $TMP_TGT_FILE;
+    } else {
+        die 'Missing keytab (' . $in{'keytab'} . ')';
     }
     my $tgtEnv = 'FILE:' . $in{'tgt'};
     $ENV{KRB5CCNAME} = $tgtEnv;
@@ -78,9 +67,6 @@ sub _create_ticket_cache {
 
     Authen::Krb5::init_context();
     Authen::Krb5::init_ets();
-    if (!$in{'principal'}) {
-        die "ERROR parameter 'principal', the Kerberos principal, missing.";
-    }
     my $client = Authen::Krb5::parse_name($in{'principal'});
     my $server = Authen::Krb5::parse_name('krbtgt/' . $in{'realm'});
     my $cc     = Authen::Krb5::cc_resolve($tgtEnv);
@@ -172,6 +158,12 @@ sub lt_ldap_connect {
             die("ERROR anonymous bind: ", $errstr);
         }
     } elsif ($in{'bindtype'} eq 'simple') {
+        if (!$in{'user_dn'}) {
+            die('missing parameter user_dn');
+        }
+        if (!$in{'user_pw'}) {
+            die('missing parameter user_pw');
+        }
         if ($in{'debug'}) {
             lt_dbg("simple bind to server $this_host:$this_port");
         }
@@ -179,19 +171,20 @@ sub lt_ldap_connect {
             my $errstr = $ldap->errstring;
             die("ERROR anonymous bind: ", $errstr);
         }
-    } elsif ($in{'bindtype'} eq 'simple') {
-        # Create a ticket cache if we need to
-        _create_ticket_cache($in_ref);
+    } elsif ($in{'bindtype'} eq 'gssapi') {
         if ($in{'debug'}) {
             lt_dbg("GSSAPI bind to server  $this_host:$this_port");
         }
         if (($ldap->sasl_parms(-mech => "GSSAPI")) != LDAP_SUCCESS) {
-            my $errstr = $ldap->errstring;
-            die("ERROR SASL PARAMS: ", $errstr);
+            if ($in{'debug'}) {
+                lt_dbg('sasl_parms: ' . $ldap->errstring);
+            }
         }
-        if ($ldap->bind_s(-type=>LDAP_AUTH_SASL) != LDAP_SUCCESS) {
-            my $errstr = $ldap->errstring;
-            die("ERROR GSSAPI bind: ", $errstr);
+        if ($ldap->bind_s(-type => LDAP_AUTH_SASL) != LDAP_SUCCESS) {
+            if ($in{'debug'}) {
+                lt_dbg('GSSAPI bind: ' . $ldap->errstring);
+            }
+        }
     } else {
         die("ERROR Invalid bindtype: ", $in{'bindtype'});
     }
@@ -235,14 +228,16 @@ CZ::LDAPtools - Utility routines for the LDAP Servers
 
     use CZ::LDAPtools;
 
-    $DIR = lt_ldap_connect (host      => 'host1,host2,host3',
-                            principal => 'service/name',
-                            keytab    => '/etc/ldap/ldap-admin.keytab',
-                            tgt       => '/run/ldap-server.tgt',
-                            bindtype  => 'anonymous'|'simple'|'gssapi',
-                            user      => 'some user',
-                            pass      => 'some password',
-                            debug     => 'anyvalue');
+    $DIR = lt_ldap_connect(host      => 'host1,host2,host3',
+                           bindtype  => 'anonymous'|'simple'|'gssapi',
+                           user_dn   => 'some dn',
+                           user_pw   => 'some password',
+                           debug     => 'anyvalue');
+
+    lt_create_ticket_cache(principal => 'service/name',
+                           keytab    => '/etc/ldap/ldap-admin.keytab',
+                           debug     => 'anyvalue');
+
     lt_ldap_disconnect ($DIR);
 
     lt_dbg('some message');
@@ -272,26 +267,31 @@ Format ACL entry for display to human beings.  The single input is
 the ACL to be formated.  The ACL is returned with added white space
 to make the ACL more readable.
 
+=item lt_create_ticket_cache
+
+Create a Kerberos ticket cache given a keytab and a principal name.
+Parameters are passed to the routine as hash key value pairs.  Valid
+hash entries are;
+
+        keytab - if supplied the keytab to use when creating a
+            Kerberos ticket cache.  Ignored if tgt is specified.
+        principal - the principal name to be used when creating a
+            Kerberos ticket cache.  This parameter must be a fully
+            qualified principal, i.e. it must include the realm.
+        debug - display debugging messages to STDOUT
+
 =item lt_ldap_connect
 
 Connect to an LDAP directory.  An LDAP directory connection object is
 returned.  Parameters are passed to the routine as hash key value
 pairs.  Valid hash entries are;
 
-        host - A comma separate list of hostnames of at least one host.
-        keytab - if supplied the keytab to use when creating a
-            Kerberos ticket cache.  Ignored if tgt is specified.
-        principal - the principal name to be used when creating a
-            Kerberos ticket cache.  If this value is not specified
-            then it is assumed that the KRB5CCNAME environment value
-            points to a valid ticket cache.  It set then the tgt
-            hash value must also be specified.
-        tgt - the file name of the Kerberos ticket cache. If specified the
-            file is assumed to have been created by an external process.
-            A missing tgt file is an error if no keytab is supplied.
-        anonymous - if specified as 'true' then the Kerberos hash
-            values are ignore and an anonymous bind is performed.
-        debug - display debugging messages to STDOUT
+        host - A comma separate list of hostnames.
+        port - The port to bind to.
+        bindtype - The bind method when connecting to the LDAP
+            server.  Values of anonymous, simple, and gssapi are
+            supported.
+        debug - Display debugging messages to STDOUT
 
 =item lt_pool_host('host1,host2,host3')
 

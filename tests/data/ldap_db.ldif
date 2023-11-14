@@ -1,0 +1,117 @@
+dn: dc=ca-zephyr,dc=org
+objectClass: organization
+objectClass: dcObject
+objectClass: top
+o: CZ Software
+dc: ca-zephyr
+
+dn: ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: organizationalUnit
+ou: net
+description: Network entries
+
+dn: dc=org,ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: dNSDomain2
+objectClass: domainRelatedObject
+objectClass: PdnsRecordData
+dc: org
+associatedDomain: org
+
+dn: dc=arpa,ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: dNSDomain2
+objectClass: domainRelatedObject
+dc: arpa
+associatedDomain: 0.0.10.in-addr.arpa
+
+dn: cn=cz-dns,ou=net,dc=ca-zephyr,dc=org
+objectClass: applicationProcess
+objectClass: krb5Principal
+cn: shelter-log
+cn: cz-dns
+description: Host access to the directory for cz-dns
+krb5PrincipalName: host/cz-dns.ca-zephyr.org@CA-ZEPHYR.ORG
+
+dn: cn=portola,ou=net,dc=ca-zephyr,dc=org
+objectClass: applicationProcess
+objectClass: krb5Principal
+cn: portola
+description: Host access to the directory for portola
+krb5PrincipalName: host/portola.ca-zephyr.org@CA-ZEPHYR.ORG
+
+dn: dc=internal,ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: dNSDomain2
+objectClass: domainRelatedObject
+objectClass: PdnsRecordData
+dc: internal
+associatedDomain: internal
+
+dn: dc=ca-zephyr,dc=org,ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: dNSDomain2
+objectClass: domainRelatedObject
+objectClass: PdnsDomain
+dc: ca-zephyr
+mXRecord: 10 portola.ca-zephyr.org
+PdnsDomainId: 1
+PdnsDomainType: master
+PdnsDomainMaster: 10.0.0.87
+associatedDomain: ca-zephyr.org
+nSRecord: cz-dns.ca-zephyr.org
+sOARecord: shelter-dns.ca-zephyr.org. bill.ca-zephyr.org. 2023042101 1800 600 
+ 84000 600
+
+dn: dc=in-addr,dc=arpa,ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: dNSDomain2
+objectClass: domainRelatedObject
+dc: in-addr
+associatedDomain: in-addr.arpa
+
+dn: dc=10,dc=in-addr,dc=arpa,ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: dNSDomain2
+objectClass: domainRelatedObject
+dc: 10
+associatedDomain: 10.in-addr.arpa
+
+dn: dc=0,dc=10,dc=in-addr,dc=arpa,ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: dNSDomain2
+objectClass: domainRelatedObject
+dc: 0
+associatedDomain: 0.10.in-addr.arpa
+
+dn: dc=0,dc=0,dc=10,dc=in-addr,dc=arpa,ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: dNSDomain2
+objectClass: domainRelatedObject
+objectClass: PdnsDomain
+dc: 0
+associatedDomain: 0.0.10.in-addr.arpa
+PdnsDomainId: 100
+mXRecord: 10 portola.ca-zephyr.org
+nSRecord: cz-dns.ca-zephyr.org
+PdnsDomainMaster: 10.0.0.87
+PdnsDomainType: master
+sOARecord: 0.0.10.in-addr.arpa. bill.ca-zephyr.org. 2023042101 1800 600 84000 
+ 600
+
+dn: dc=ca-zephyr,dc=internal,ou=net,dc=ca-zephyr,dc=org
+objectClass: top
+objectClass: dNSDomain2
+objectClass: domainRelatedObject
+objectClass: PdnsDomain
+dc: ca-zephyr
+associatedDomain: ca-zephyr.internal
+mXRecord: 10 portola.ca-zephyr.org
+PdnsDomainType: master
+PdnsDomainMaster: 10.0.0.87
+nSRecord: cz-dns.ca-zephyr.org
+sOARecord: shelter-dns.ca-zephyr.internal. bill.ca-zephyr.org. 2023042101 1800
+  600 84000 600
+PdnsDomainId: 50
+
