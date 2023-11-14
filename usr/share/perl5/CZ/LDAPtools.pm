@@ -162,16 +162,24 @@ sub lt_ldap_connect {
         die "ERROR Connection to $this_host:$this_port failed.";
     }
     my $status;
-    if ($in{'anonymous'}) {
+    if ($in{'bindtype'} eq 'anonymous') {
         if ($in{'debug'}) {
             lt_dbg("anonymous bind to server $this_host:$this_port");
         }
-        if ($ldap->bind_s != LDAP_SUCCESS) {
+        if ($ldap->bind_s() != LDAP_SUCCESS) {
             my $errstr = $ldap->errstring;
             $ldap->unbind;
             die("ERROR anonymous bind: ", $errstr);
         }
-    } else {
+    } elsif ($in{'bindtype'} eq 'simple') {
+        if ($in{'debug'}) {
+            lt_dbg("simple bind to server $this_host:$this_port");
+        }
+        if ($ldap->bind_s($in{'user_dn'}, $in{'user_pw'}) != LDAP_SUCCESS) {
+            my $errstr = $ldap->errstring;
+            die("ERROR anonymous bind: ", $errstr);
+        }
+    } elsif ($in{'bindtype'} eq 'simple') {
         # Create a ticket cache if we need to
         _create_ticket_cache($in_ref);
         if ($in{'debug'}) {
@@ -179,9 +187,13 @@ sub lt_ldap_connect {
         }
         if (($ldap->sasl_parms(-mech => "GSSAPI")) != LDAP_SUCCESS) {
             my $errstr = $ldap->errstring;
-            $ldap->unbind;
-            die("ERROR GSSAPI bind: ", $errstr);
+            die("ERROR SASL PARAMS: ", $errstr);
         }
+        if ($ldap->bind_s(-type=>LDAP_AUTH_SASL) != LDAP_SUCCESS) {
+            my $errstr = $ldap->errstring;
+            die("ERROR GSSAPI bind: ", $errstr);
+    } else {
+        die("ERROR Invalid bindtype: ", $in{'bindtype'});
     }
     return $ldap;
 }
@@ -227,7 +239,9 @@ CZ::LDAPtools - Utility routines for the LDAP Servers
                             principal => 'service/name',
                             keytab    => '/etc/ldap/ldap-admin.keytab',
                             tgt       => '/run/ldap-server.tgt',
-                            anonymous => 'anyvalue',
+                            bindtype  => 'anonymous'|'simple'|'gssapi',
+                            user      => 'some user',
+                            pass      => 'some password',
                             debug     => 'anyvalue');
     lt_ldap_disconnect ($DIR);
 
