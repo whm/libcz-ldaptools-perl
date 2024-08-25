@@ -7,7 +7,6 @@
 
 package CZ::LDAPtools;
 
-use Authen::Krb5;
 use Net::LDAPapi;
 use strict;
 
@@ -17,7 +16,6 @@ BEGIN {
 
     our @ISA    = qw(Exporter);
     our @EXPORT = qw(
-      lt_create_ticket_cache
       lt_dbg
       lt_format_acls
       lt_ldap_connect
@@ -31,54 +29,6 @@ BEGIN {
 }
 
 my $TMP_TGT_FILE;
-
-##############################################################################
-# Internal routines
-##############################################################################
-
-# ------------------------------------------------------------------------
-# Create kerberos ticket cache
-
-sub lt_create_ticket_cache {
-    my $in_ref = shift;
-    my %in     = %{$in_ref};
-
-    if (!$in{'realm'}) {
-        die 'ERROR: lt_create_ticket_cache missing parameter realm';
-    }
-    if (!$in{'principal'}) {
-        die 'missing parameter principal';
-    }
-
-    if ($in{'keytab'} && -e $in{'keytab'}) {
-        my $princ = $in{'principal'};
-        $princ =~ s{/}{_}xmsg;
-        $TMP_TGT_FILE = '/tmp/' . $princ . '.tgt';
-        $in{'tgt'} = $TMP_TGT_FILE;
-    } else {
-        die 'Missing keytab (' . $in{'keytab'} . ')';
-    }
-    my $tgtEnv = 'FILE:' . $in{'tgt'};
-    $ENV{KRB5CCNAME} = $tgtEnv;
-
-    if ($in{'debug'}) {
-        lt_dbg("ticket cache: " . $tgtEnv);
-    }
-
-    Authen::Krb5::init_context();
-    Authen::Krb5::init_ets();
-    my $client = Authen::Krb5::parse_name($in{'principal'});
-    my $server = Authen::Krb5::parse_name('krbtgt/' . $in{'realm'});
-    my $cc     = Authen::Krb5::cc_resolve($tgtEnv);
-    $cc->initialize($client);
-    my $kt = Authen::Krb5::kt_resolve($in{'keytab'});
-    Authen::Krb5::get_in_tkt_with_keytab($client, $server, $kt, $cc)
-      or die 'ERROR: '
-      . Authen::Krb5::error()
-      . " while getting Kerberos ticket";
-
-    return;
-}
 
 ##############################################################################
 # Public Routines
@@ -234,10 +184,6 @@ CZ::LDAPtools - Utility routines for the LDAP Servers
                            user_pw   => 'some password',
                            debug     => 'anyvalue');
 
-    lt_create_ticket_cache(principal => 'service/name',
-                           keytab    => '/etc/ldap/ldap-admin.keytab',
-                           debug     => 'anyvalue');
-
     lt_ldap_disconnect ($DIR);
 
     lt_dbg('some message');
@@ -266,19 +212,6 @@ Displays the message passed as parameter with the prefix 'DEBUG:'.
 Format ACL entry for display to human beings.  The single input is
 the ACL to be formated.  The ACL is returned with added white space
 to make the ACL more readable.
-
-=item lt_create_ticket_cache
-
-Create a Kerberos ticket cache given a keytab and a principal name.
-Parameters are passed to the routine as hash key value pairs.  Valid
-hash entries are;
-
-        keytab - if supplied the keytab to use when creating a
-            Kerberos ticket cache.  Ignored if tgt is specified.
-        principal - the principal name to be used when creating a
-            Kerberos ticket cache.  This parameter must be a fully
-            qualified principal, i.e. it must include the realm.
-        debug - display debugging messages to STDOUT
 
 =item lt_ldap_connect
 

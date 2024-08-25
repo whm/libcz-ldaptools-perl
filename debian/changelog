@@ -1,3 +1,10 @@
+libcz-ldaptools-perl (7) unstable; urgency=medium
+
+  * Remove libauthen-krb5-perl dependency since it is no longer
+    being maintained.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Sun, 25 Aug 2024 07:05:53 +0000
+
 libcz-ldaptools-perl (6) unstable; urgency=medium
 
   * Fix to GSSAPI binds.
