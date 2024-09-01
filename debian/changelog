@@ -1,3 +1,9 @@
+libcz-ldaptools-perl (8) unstable; urgency=medium
+
+  * Add lt_read_conf to the tools module.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Sun, 01 Sep 2024 22:26:21 +0000
+
 libcz-ldaptools-perl (7) unstable; urgency=medium
 
   * Remove libauthen-krb5-perl dependency since it is no longer

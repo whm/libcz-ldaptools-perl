@@ -7,6 +7,7 @@
 
 package CZ::LDAPtools;
 
+use AppConfig qw(:argcount :expand);
 use Net::LDAPapi;
 use strict;
 
@@ -22,6 +23,7 @@ BEGIN {
       lt_ldap_disconnect
       lt_msg
       lt_pool_host
+      lt_read_conf
     );
 
     our $VERSION = '6';
@@ -164,6 +166,81 @@ sub lt_pool_host {
     my $pool_host = $host_list[$idx];
     $pool_host =~ s/\s+//xmsg;
     return $pool_host;
+}
+
+# ------------------------------------------------------------------------
+# Read configuration properties
+
+sub lt_read_conf {
+    my ($filename) = @_;
+
+    if (!$filename) {
+        $filename = '/etc/cz-ldaptools.conf';
+    }
+
+    my $conf = AppConfig->new({});
+    $conf->define(
+        'default_domain',
+        {
+            DEFAULT  => 'ca-zephyr.org',
+            ARGCOUNT => ARGCOUNT_ONE
+        }
+    );
+    $conf->define(
+        'host_prefix',
+        {
+            DEFAULT  => 'host',
+            ARGCOUNT => ARGCOUNT_LIST
+        }
+    );
+    $conf->define(
+        'krb_realm',
+        {
+            DEFAULT  => 'CA-ZEPHYR.ORG',
+            ARGCOUNT => ARGCOUNT_ONE
+        }
+    );
+    $conf->define(
+        'ldap_bindtype',
+        {
+            DEFAULT  => 'gssapi',
+            ARGCOUNT => ARGCOUNT_ONE
+        }
+    );
+    $conf->define(
+        'ldap_base',
+        {
+            DEFAULT  => 'dc=ca-zephyr,dc=org',
+            ARGCOUNT => ARGCOUNT_ONE
+        }
+    );
+    $conf->define(
+        'ldap_host',
+        {
+            DEFAULT  => 'localhost',
+            ARGCOUNT => ARGCOUNT_ONE
+        }
+    );
+    $conf->define(
+        'ldap_port',
+        {
+            DEFAULT  => '389',
+            ARGCOUNT => ARGCOUNT_ONE
+        }
+    );
+    $conf->define('ldap_password', { ARGCOUNT => ARGCOUNT_ONE });
+    $conf->define('ldap_user',     { ARGCOUNT => ARGCOUNT_ONE });
+
+    if (-e $filename) {
+        $conf->file($filename) or die "ERROR: problem reading $filename";
+    }
+
+    if ($conf->ldap_host() =~ /,/xms) {
+        my $one_host = lt_pool_host($conf->ldap_host);
+        $conf->ldap_host($one_host);
+    }
+
+    return $conf;
 }
 
 END { }

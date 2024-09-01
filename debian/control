@@ -3,6 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Bill MacAllister <bill@ca-zephyr.org>
 Build-Depends: debhelper (>= 13),
+ libappconfig-perl,
  libipc-run-perl,
  libnet-ldapapi-perl,
  ldap-utils,
@@ -14,6 +15,7 @@ Standards-Version: 4.7.0.0
 Package: libcz-ldaptools-perl
 Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends},
+ libappconfig-perl,
  libipc-run-perl,
  libnet-ldapapi-perl,
  perl
