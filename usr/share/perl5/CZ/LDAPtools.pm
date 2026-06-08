@@ -3,7 +3,7 @@
 # Description: A utility module for LDAP databases
 # Author: Bill MacAllister <bill@ca-zephyr.org>
 # Copyright (c) 2016-2023 Dropbox, Inc.
-# Copyright: 2023 CZ Software
+# Copyright: 2023-2026 CZ Software
 
 package CZ::LDAPtools;
 
@@ -128,13 +128,19 @@ sub lt_ldap_connect {
             lt_dbg("GSSAPI bind to server  $this_host:$this_port");
         }
         if (($ldap->sasl_parms(-mech => "GSSAPI")) != LDAP_SUCCESS) {
-            if ($in{'debug'}) {
-                lt_dbg('sasl_parms: ' . $ldap->errstring);
+            my $errstr = $ldap->errstring;
+            if ($errstr =~ /error/xmsi) {
+                die("ERROR sasl_parms: $errstr");
+            } elsif ($in{'debug'}) {
+                lt_dbg("sasl_parms: $errstr");
             }
         }
         if ($ldap->bind_s(-type => LDAP_AUTH_SASL) != LDAP_SUCCESS) {
-            if ($in{'debug'}) {
-                lt_dbg('GSSAPI bind: ' . $ldap->errstring);
+            my $errstr = $ldap->errstring;
+            if ($errstr =~ /error/xmsi) {
+                die("ERROR GSSAPI bind: $errstr");
+            } elsif ($in{'debug'}) {
+                lt_dbg("GSSAPI bind: $errstr");
             }
         }
     } else {
@@ -336,7 +342,7 @@ This program is distributed in the hope that it will be
 useful, but without any warranty; without even the implied
 warranty of merchantability or fitness for a particular purpose.
 
-Copyright 2023 CZ Software
+Copyright 2023-2026 CZ Software
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

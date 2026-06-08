@@ -1,3 +1,10 @@
+libcz-ldaptools-perl (9) unstable; urgency=medium
+
+  * Die when GSSAPI bind fails and don't just display debugging
+    messages.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Mon, 08 Jun 2026 18:03:50 +0000
+
 libcz-ldaptools-perl (8) unstable; urgency=medium
 
   * Add lt_read_conf to the tools module.
